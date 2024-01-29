@@ -8,6 +8,9 @@ exports.register = async (req, res, next) => {
         if (!(s_code && password && confirmPassword && firstname && email)) {
             return next(new Error("fullfill blank input::400"))
         }
+        if (password !== confirmPassword) {
+            throw new Error("check confirm password::401")
+        }
         res.json(req.body)
     } catch (err) {
         next(err)
