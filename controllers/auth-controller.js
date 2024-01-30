@@ -26,8 +26,25 @@ exports.register = tryCatch(async (req, res, next) => {
 
 exports.login = tryCatch(async (req, res, next) => {
     const { t_code, s_code, password } = req.body
+    console.log(req.body)
+    if (s_code && t_code) {
+        throw new Error('Teacher or Student::400')
+    }
 
-    const secretKey = '12c12kxk21x3pk12c'
-    const result = jwt.sign(req.body, secretKey)
-    res.json('asd')
+    const result = t_code
+        ? await db.teacher.findFirstOrThrow({ where: { t_code: t_code } })
+        : await db.student.findFirstOrThrow({ where: { s_code: s_code } })
+
+    let pwOk = await bcrypt.compare(password, result.password)
+    if (!pwOk) {
+        throw new Error('Invalid login::400')
+    }
+
+    const payLoad = t_code
+        ? { id: result.id, t_code: result.t_code, }
+        : { id: result.id, s_code: result.s_code }
+
+    const token = jwt.sign(payLoad, process.env.JWTSECRET, { expiresIn: '30d' })
+
+    res.json({ ...payLoad, token })
 })
